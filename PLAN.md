@@ -18,12 +18,12 @@ Each step includes a test file in `backend/tests/`. Run all tests with `pytest` 
 | STEP-5 | Redis Session Layer | ✅ done |
 | STEP-6 | Auth API | ✅ done |
 | STEP-7 | Auth Middleware | ✅ done |
-| STEP-8 | Teams API | ⬜ |
-| STEP-9 | Matches API | ⬜ |
-| STEP-10 | Venues API | ⬜ |
-| STEP-11 | Player Leaderboards API | ⬜ |
-| STEP-12 | Group Standings API | ⬜ |
-| STEP-13 | Knockout Bracket API | ⬜ |
+| STEP-8 | Teams API | ✅ done |
+| STEP-9 | Matches API | ✅ done |
+| STEP-10 | Venues API | ✅ done |
+| STEP-11 | Player Leaderboards API | ✅ done |
+| STEP-12 | Group Standings API | ✅ done |
+| STEP-13 | Knockout Bracket API | ✅ done |
 | STEP-14 | Predictions API | ⬜ |
 | STEP-15 | Prediction Scoring | ⬜ |
 | STEP-16 | User Profile API | ⬜ |
@@ -144,11 +144,36 @@ Trigger: `update_player_stats` on `match_events` INSERT
 
 ## Phase 2 — Teams, Matches, Venues
 
-### STEP-8: Teams API
+### ✅ STEP-8: Teams API
 `backend/app/routes/teams.py`
 
-`GET /api/teams` — all 32 teams; optional `?group=A`
-`GET /api/teams/{id}` — team + full squad
+`GET /api/teams` — all 32 teams sorted by group then name; optional `?group=A` filters to 4 teams in that group.
+`GET /api/teams/{id}` — team metadata + full 23-player squad ordered by jersey number. 404 if not found.
+
+**Sample: `GET /api/teams?group=A`**
+Returns the 4 teams in Group A, sorted alphabetically. Useful for building group-stage tabs.
+```json
+[
+  { "id": 2, "name": "Ecuador",     "country_code": "ECU", "group_name": "A", "fifa_ranking": 44, "coach": "Gustavo Alfaro" },
+  { "id": 4, "name": "Netherlands", "country_code": "NED", "group_name": "A", "fifa_ranking":  8, "coach": "Louis van Gaal" },
+  { "id": 1, "name": "Qatar",       "country_code": "QAT", "group_name": "A", "fifa_ranking": 50, "coach": "Felix Sanchez" },
+  { "id": 3, "name": "Senegal",     "country_code": "SEN", "group_name": "A", "fifa_ranking": 18, "coach": "Aliou Cisse" }
+]
+```
+
+**Sample: `GET /api/teams/9`** (Argentina)
+Returns team info plus `players` array. Teams with real squads (ARG, FRA, BRA, ENG, POR, CRO, MAR, GER) have actual names; others have generic `Player N`.
+```json
+{
+  "id": 9, "name": "Argentina", "country_code": "ARG", "group_name": "C",
+  "fifa_ranking": 3, "coach": "Lionel Scaloni",
+  "players": [
+    { "id": 186, "name": "Juan Musso",         "position": "GK",  "jersey_number": 1, "goals": 0, "assists": 0 },
+    { "id": 195, "name": "Nicolas Tagliafico", "position": "DEF", "jersey_number": 3, "goals": 0, "assists": 0 },
+    { "id": 189, "name": "Gonzalo Montiel",    "position": "DEF", "jersey_number": 4, "goals": 0, "assists": 0 }
+  ]
+}
+```
 
 - Tests: `tests/test_step8_teams.py`
   - `/api/teams` returns 32 teams
@@ -157,11 +182,45 @@ Trigger: `update_player_stats` on `match_events` INSERT
 
 ---
 
-### STEP-9: Matches API
+### ✅ STEP-9: Matches API
 `backend/app/routes/matches.py`
 
-`GET /api/matches` — filters: `?date=YYYY-MM-DD`, `?stage=group`, `?team_id=5`, `?venue_id=3`
-`GET /api/matches/{id}` — match detail + `events` array (minute order)
+`GET /api/matches` — all 64 matches ordered by date. Combinable filters: `?date=YYYY-MM-DD`, `?stage=group|round_of_16|quarterfinal|semifinal|third_place|final`, `?team_id=N`, `?venue_id=N`.
+`GET /api/matches/{id}` — match detail with nested home/away team objects, venue, and `events` array ordered by minute. 404 if not found.
+
+**Sample: `GET /api/matches` (first 2)**
+Each match embeds team and venue objects so the frontend never needs a second request.
+```json
+[
+  {
+    "id": 1, "match_date": "2022-11-20T19:00:00", "stage": "group", "status": "completed",
+    "group_name": "A", "home_score": 0, "away_score": 2,
+    "home_team": { "id": 1, "name": "Qatar",   "country_code": "QAT" },
+    "away_team": { "id": 2, "name": "Ecuador", "country_code": "ECU" },
+    "venue":     { "id": 2, "name": "Al Bayt Stadium", "city": "Al Khor" }
+  },
+  {
+    "id": 7, "match_date": "2022-11-21T13:00:00", "stage": "group", "status": "completed",
+    "group_name": "B", "home_score": 6, "away_score": 2,
+    "home_team": { "id": 5, "name": "England", "country_code": "ENG" },
+    "away_team": { "id": 6, "name": "Iran",    "country_code": "IRN" },
+    "venue":     { "id": 6, "name": "Khalifa International Stadium", "city": "Doha" }
+  }
+]
+```
+
+**Sample: `GET /api/matches/64`** (the final — ARG vs FRA 3-3)
+`events` is empty in seed data for most matches; populated when match events are inserted.
+```json
+{
+  "id": 64, "match_date": "2022-12-18T17:00:00", "stage": "final", "status": "completed",
+  "group_name": null, "home_score": 3, "away_score": 3,
+  "home_team": { "id": 9,  "name": "Argentina", "country_code": "ARG" },
+  "away_team": { "id": 13, "name": "France",    "country_code": "FRA" },
+  "venue":     { "id": 1,  "name": "Lusail Stadium", "city": "Lusail" },
+  "events": []
+}
+```
 
 - Tests: `tests/test_step9_matches.py`
   - No filter returns 64 matches
@@ -171,10 +230,24 @@ Trigger: `update_player_stats` on `match_events` INSERT
 
 ---
 
-### STEP-10: Venues API
+### ✅ STEP-10: Venues API
 `backend/app/routes/venues.py`
 
-`GET /api/venues` — all 8 venues
+`GET /api/venues` — all 8 Qatar stadiums sorted by name, including capacity. Used to populate venue filter dropdowns.
+
+**Sample: `GET /api/venues`**
+```json
+[
+  { "id": 5, "name": "Ahmad Bin Ali Stadium",       "city": "Al Rayyan", "country": "Qatar", "capacity": 44740 },
+  { "id": 2, "name": "Al Bayt Stadium",             "city": "Al Khor",   "country": "Qatar", "capacity": 60000 },
+  { "id": 3, "name": "Al Janoub Stadium",           "city": "Al Wakrah", "country": "Qatar", "capacity": 40000 },
+  { "id": 7, "name": "Al Thumama Stadium",          "city": "Doha",      "country": "Qatar", "capacity": 40000 },
+  { "id": 4, "name": "Education City Stadium",      "city": "Al Rayyan", "country": "Qatar", "capacity": 45350 },
+  { "id": 6, "name": "Khalifa International Stadium","city": "Doha",     "country": "Qatar", "capacity": 45416 },
+  { "id": 1, "name": "Lusail Stadium",              "city": "Lusail",    "country": "Qatar", "capacity": 89000 },
+  { "id": 8, "name": "Stadium 974",                 "city": "Doha",      "country": "Qatar", "capacity": 40000 }
+]
+```
 
 - Tests: `tests/test_step10_venues.py`
   - Returns 8 records
@@ -182,11 +255,31 @@ Trigger: `update_player_stats` on `match_events` INSERT
 
 ---
 
-### STEP-11: Player Leaderboards API
+### ✅ STEP-11: Player Leaderboards API
 `backend/app/routes/leaderboards.py`
 
-`GET /api/leaderboards/goals` — top 10 by goals DESC, assists DESC; includes team name
-`GET /api/leaderboards/assists` — top 10 by assists DESC, goals DESC
+`GET /api/leaderboards/goals` — top 10 scorers, sorted goals DESC then assists DESC. Includes team name and country code.
+`GET /api/leaderboards/assists` — top 10 assisters, sorted assists DESC then goals DESC.
+
+**Sample: `GET /api/leaderboards/goals` (top 3)**
+Mbappé leads with 8 goals (Golden Boot), Messi second with 7.
+```json
+[
+  { "id": 294, "name": "Kylian Mbappe",  "position": "FWD", "jersey_number": 10, "goals": 8, "assists": 2, "team_name": "France",    "country_code": "FRA" },
+  { "id": 203, "name": "Lionel Messi",   "position": "FWD", "jersey_number": 10, "goals": 7, "assists": 3, "team_name": "Argentina", "country_code": "ARG" },
+  { "id": 202, "name": "Julian Alvarez", "position": "FWD", "jersey_number":  9, "goals": 4, "assists": 2, "team_name": "Argentina", "country_code": "ARG" }
+]
+```
+
+**Sample: `GET /api/leaderboards/assists` (top 3)**
+Messi and Griezmann tied on 3 assists; tie-broken by goals (Messi: 7, Griezmann: 0).
+```json
+[
+  { "id": 203, "name": "Lionel Messi",     "position": "FWD", "jersey_number": 10, "goals": 7, "assists": 3, "team_name": "Argentina", "country_code": "ARG" },
+  { "id": 291, "name": "Antoine Griezmann","position": "MID", "jersey_number":  7, "goals": 0, "assists": 3, "team_name": "France",    "country_code": "FRA" },
+  { "id": 294, "name": "Kylian Mbappe",   "position": "FWD", "jersey_number": 10, "goals": 8, "assists": 2, "team_name": "France",    "country_code": "FRA" }
+]
+```
 
 - Tests: `tests/test_step11_leaderboards.py`
   - Each endpoint returns exactly 10 records
@@ -196,12 +289,25 @@ Trigger: `update_player_stats` on `match_events` INSERT
 
 ## Phase 3 — Standings
 
-### STEP-12: Group Standings API
+### ✅ STEP-12: Group Standings API
 `backend/app/routes/standings.py`
 
-`GET /api/standings/group` — all 8 groups; `?group=A` for one
-Calls `get_group_standings` stored procedure.
-Each row: `matches_played`, `wins`, `draws`, `losses`, `goals_for`, `goals_against`, `goal_difference`, `points`
+`GET /api/standings/group` — standings for all 8 groups as a single object keyed A–H. `?group=A` returns just that group.
+Delegates to the `get_group_standings(group)` MySQL stored procedure. Sorted by points → goal difference → goals for → FIFA ranking.
+Note: SUM() values from stored procedures come back as strings from PyMySQL — cast to `int` when doing arithmetic.
+
+**Sample: `GET /api/standings/group?group=A`**
+NED top (7 pts), SEN second (6 pts), ECU third (4 pts), QAT bottom (0 pts, -6 GD).
+```json
+{
+  "A": [
+    { "id": 4, "name": "Netherlands", "country_code": "NED", "fifa_ranking":  8, "matches_played": 3, "wins": "2", "draws": "1", "losses": "0", "goals_for": "5", "goals_against": "1", "goal_difference":  "4", "points": "7" },
+    { "id": 3, "name": "Senegal",     "country_code": "SEN", "fifa_ranking": 18, "matches_played": 3, "wins": "2", "draws": "0", "losses": "1", "goals_for": "5", "goals_against": "4", "goal_difference":  "1", "points": "6" },
+    { "id": 2, "name": "Ecuador",     "country_code": "ECU", "fifa_ranking": 44, "matches_played": 3, "wins": "1", "draws": "1", "losses": "1", "goals_for": "4", "goals_against": "3", "goal_difference":  "1", "points": "4" },
+    { "id": 1, "name": "Qatar",       "country_code": "QAT", "fifa_ranking": 50, "matches_played": 3, "wins": "0", "draws": "0", "losses": "3", "goals_for": "1", "goals_against": "7", "goal_difference": "-6", "points": "0" }
+  ]
+}
+```
 
 - Tests: `tests/test_step12_standings.py`
   - All 8 groups present
@@ -210,16 +316,50 @@ Each row: `matches_played`, `wins`, `draws`, `losses`, `goals_for`, `goals_again
 
 ---
 
-### STEP-13: Knockout Bracket API
+### ✅ STEP-13: Knockout Bracket API
 `backend/app/routes/standings.py` (same file)
 
-`GET /api/standings/knockout` — bracket as nested JSON
+`GET /api/standings/knockout` — full bracket as a single nested JSON object with 5 round keys.
+Each slot has `match_id`, `status`, `home_score`, `away_score`, `home_team`, `away_team`.
+Match counts: `round_of_16` = 8, `quarterfinal` = 4, `semifinal` = 2, `third_place` = 1, `final` = 1.
 
-Rounds: `round_of_16`, `quarterfinal`, `semifinal`, `third_place`, `final`
-Each slot: `match_id`, `home_team`, `away_team`, `score`, `status`
+**Sample: `GET /api/standings/knockout`** (trimmed to 1–2 entries per round)
+```json
+{
+  "round_of_16": [
+    { "match_id": 49, "status": "completed", "home_score": 3, "away_score": 1,
+      "home_team": { "id": 4,  "name": "Netherlands", "country_code": "NED" },
+      "away_team": { "id": 7,  "name": "USA",         "country_code": "USA" } },
+    { "match_id": 50, "status": "completed", "home_score": 2, "away_score": 1,
+      "home_team": { "id": 9,  "name": "Argentina",   "country_code": "ARG" },
+      "away_team": { "id": 14, "name": "Australia",   "country_code": "AUS" } }
+  ],
+  "quarterfinal": [
+    { "match_id": 57, "status": "completed", "home_score": 1, "away_score": 1,
+      "home_team": { "id": 24, "name": "Croatia", "country_code": "CRO" },
+      "away_team": { "id": 25, "name": "Brazil",  "country_code": "BRA" } }
+  ],
+  "semifinal": [
+    { "match_id": 61, "status": "completed", "home_score": 3, "away_score": 0,
+      "home_team": { "id": 9,  "name": "Argentina", "country_code": "ARG" },
+      "away_team": { "id": 24, "name": "Croatia",   "country_code": "CRO" } }
+  ],
+  "third_place": [
+    { "match_id": 63, "status": "completed", "home_score": 2, "away_score": 1,
+      "home_team": { "id": 24, "name": "Croatia", "country_code": "CRO" },
+      "away_team": { "id": 23, "name": "Morocco", "country_code": "MAR" } }
+  ],
+  "final": [
+    { "match_id": 64, "status": "completed", "home_score": 3, "away_score": 3,
+      "home_team": { "id": 9,  "name": "Argentina", "country_code": "ARG" },
+      "away_team": { "id": 13, "name": "France",    "country_code": "FRA" } }
+  ]
+}
+```
 
 - Tests: `tests/test_step13_bracket.py`
   - All 5 round keys present
+  - `round_of_16` has 8 matches
   - Final slot shows Argentina vs France, 3-3
 
 ---

@@ -217,6 +217,7 @@ DB_NAME="${DB_NAME:-worldcup}"
 # -- MySQL -----------------------------------------------------------------
 info "Setting up MySQL database '$DB_NAME'..."
 _SETUP_SQL="
+SET GLOBAL log_bin_trust_function_creators = 1;
 CREATE DATABASE IF NOT EXISTS \`$DB_NAME\`;
 CREATE USER IF NOT EXISTS '$DB_USER'@'$DB_HOST' IDENTIFIED BY '$DB_PASSWORD';
 GRANT ALL PRIVILEGES ON \`$DB_NAME\`.* TO '$DB_USER'@'$DB_HOST';

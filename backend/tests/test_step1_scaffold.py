@@ -21,8 +21,14 @@ def test_all_blueprints_registered():
     assert expected == names
 
 
-def test_app_returns_404_on_unknown_route():
+def test_app_handles_unknown_route():
     from app import create_app
+    import os
     client = create_app().test_client()
     resp = client.get("/no-such-route")
-    assert resp.status_code == 404
+    # SPA: serves index.html (200) when dist exists; 404 otherwise
+    dist = os.path.join(os.path.dirname(__file__), "../../frontend/dist")
+    if os.path.isdir(dist):
+        assert resp.status_code == 200
+    else:
+        assert resp.status_code == 404

@@ -84,12 +84,78 @@ esac
 # Fresh install
 # ---------------------------------------------------------------------------
 
-command -v python3  >/dev/null || error "python3 not found"
-command -v pip      >/dev/null || error "pip not found"
-command -v node     >/dev/null || error "node not found"
-command -v npm      >/dev/null || error "npm not found"
-command -v mysql    >/dev/null || error "mysql client not found"
-command -v redis-cli >/dev/null || error "redis-cli not found"
+# -- Detect package manager ------------------------------------------------
+if command -v apt-get >/dev/null; then
+    PKG_INSTALL="sudo apt-get install -y"
+    PKG_UPDATE="sudo apt-get update -qq"
+elif command -v dnf >/dev/null; then
+    PKG_INSTALL="sudo dnf install -y"
+    PKG_UPDATE="sudo dnf check-update -q || true"
+elif command -v yum >/dev/null; then
+    PKG_INSTALL="sudo yum install -y"
+    PKG_UPDATE="sudo yum check-update -q || true"
+elif command -v brew >/dev/null; then
+    PKG_INSTALL="brew install"
+    PKG_UPDATE="brew update"
+else
+    error "No supported package manager found (apt/dnf/yum/brew)"
+fi
+
+_ensure() {
+    local cmd="$1" pkg="${2:-$1}"
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+        info "Installing $pkg..."
+        [[ -z "${_PKG_UPDATED:-}" ]] && { $PKG_UPDATE; _PKG_UPDATED=1; }
+        $PKG_INSTALL "$pkg"
+    fi
+}
+
+# -- Install prerequisites -------------------------------------------------
+_ensure python3
+_ensure pip python3-pip
+
+# Node/npm: use NodeSource for a recent version on apt systems
+if ! command -v node >/dev/null 2>&1; then
+    info "Installing Node.js..."
+    if command -v apt-get >/dev/null; then
+        [[ -z "${_PKG_UPDATED:-}" ]] && { $PKG_UPDATE; _PKG_UPDATED=1; }
+        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - 2>/dev/null
+        sudo apt-get install -y nodejs
+    elif command -v brew >/dev/null; then
+        brew install node
+    else
+        $PKG_INSTALL nodejs npm
+    fi
+fi
+
+if ! command -v mysql >/dev/null 2>&1; then
+    info "Installing MySQL client..."
+    [[ -z "${_PKG_UPDATED:-}" ]] && { $PKG_UPDATE; _PKG_UPDATED=1; }
+    if command -v apt-get >/dev/null; then
+        $PKG_INSTALL default-mysql-client || $PKG_INSTALL mysql-client
+    elif command -v brew >/dev/null; then
+        brew install mysql-client && export PATH="/usr/local/opt/mysql-client/bin:$PATH"
+    else
+        $PKG_INSTALL mysql
+    fi
+fi
+
+if ! command -v redis-cli >/dev/null 2>&1; then
+    info "Installing Redis..."
+    [[ -z "${_PKG_UPDATED:-}" ]] && { $PKG_UPDATE; _PKG_UPDATED=1; }
+    if command -v apt-get >/dev/null; then
+        $PKG_INSTALL redis-server
+    elif command -v brew >/dev/null; then
+        brew install redis
+    else
+        $PKG_INSTALL redis
+    fi
+fi
+
+# Verify all required tools are now present
+for cmd in python3 pip node npm mysql redis-cli; do
+    command -v "$cmd" >/dev/null || error "$cmd still not found after install attempt"
+done
 
 # -- .env ------------------------------------------------------------------
 if [[ ! -f "$ENV_FILE" ]]; then

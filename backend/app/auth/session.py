@@ -1,22 +1,15 @@
 import json
-import os
 import uuid
 
-import redis
-
 from app.db.connection import execute, query
+from app.db.redis_client import get_redis
 
 _TTL = 86400        # 24 hours
 _MAX_SESSIONS = 5
 
-_client: redis.Redis | None = None
 
-
-def _redis() -> redis.Redis:
-    global _client
-    if _client is None:
-        _client = redis.from_url(os.environ["REDIS_URL"])
-    return _client
+def _redis():
+    return get_redis()
 
 
 def _session_key(session_id: str) -> str:

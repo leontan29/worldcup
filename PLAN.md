@@ -16,8 +16,8 @@ Each step includes a test file in `backend/tests/`. Run all tests with `pytest` 
 | STEP-3 | Seed Data (2022 WC) | ✅ done |
 | STEP-4 | Database Connection Layer | ✅ done |
 | STEP-5 | Redis Session Layer | ✅ done |
-| STEP-6 | Auth API | ⬜ |
-| STEP-7 | Auth Middleware | ⬜ |
+| STEP-6 | Auth API | ✅ done |
+| STEP-7 | Auth Middleware | ✅ done |
 | STEP-8 | Teams API | ⬜ |
 | STEP-9 | Matches API | ⬜ |
 | STEP-10 | Venues API | ⬜ |

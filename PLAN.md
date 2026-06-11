@@ -25,7 +25,7 @@ Each step includes a test file in `backend/tests/`. Run all tests with `pytest` 
 | STEP-12 | Group Standings API | ✅ done |
 | STEP-13 | Knockout Bracket API | ✅ done |
 | STEP-14 | Predictions API | ✅ done |
-| STEP-15 | Prediction Scoring | ⬜ |
+| STEP-15 | Prediction Scoring | ✅ done |
 | STEP-16 | User Profile API | ⬜ |
 | STEP-17 | Activity Logging | ⬜ |
 | STEP-18 | Admin API | ⬜ |

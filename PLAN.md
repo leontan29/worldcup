@@ -26,7 +26,7 @@ Each step includes a test file in `backend/tests/`. Run all tests with `pytest` 
 | STEP-13 | Knockout Bracket API | ✅ done |
 | STEP-14 | Predictions API | ✅ done |
 | STEP-15 | Prediction Scoring | ✅ done |
-| STEP-16 | User Profile API | ⬜ |
+| STEP-16 | User Profile API | ✅ done |
 | STEP-17 | Activity Logging | ⬜ |
 | STEP-18 | Admin API | ⬜ |
 | STEP-19 | React App Setup | ⬜ |
@@ -49,12 +49,17 @@ Each step includes a test file in `backend/tests/`. Run all tests with `pytest` 
 
 ### ✅ STEP-1: Project Scaffolding
 Flask app with all blueprint stubs, `requirements.txt`, `.env.example`, `wsgi.py`.
+
+**Purpose:** Creates the Flask application skeleton with all route blueprints registered and stubbed out. Establishes the directory structure, dependency manifest, and entry point so every subsequent step has a consistent, importable app to extend — and a 404 on unknown routes confirms the app wires up correctly from day one.
+
 - Tests: `tests/test_step1_scaffold.py` (3 tests — app creates, blueprints registered, 404 on unknown route)
 
 ---
 
 ### ✅ STEP-2: MySQL Schema
 `schema.sql` — 9 tables, 8 indexes, 2 stored procedures, 1 trigger.
+
+**Purpose:** Defines the full relational model for the tournament hub. The 9-table schema captures teams, players, venues, matches, events, users, predictions, activity, and sessions — along with stored procedures and a trigger that keep derived stats consistent without requiring app-level orchestration. All downstream steps depend on this schema existing.
 
 Tables: `users`, `teams`, `players`, `venues`, `matches`, `match_events`, `predictions`, `user_activity`, `session_audit`
 
@@ -69,6 +74,8 @@ Trigger: `update_player_stats` on `match_events` INSERT
 ### ✅ STEP-3: Seed Data
 `generate_seed.py` → `seed.sql` — real 2022 World Cup data.
 
+**Purpose:** Populates the database with real 2022 FIFA World Cup data so the app has a complete, realistic dataset from day one. Accurate scores, player stats, and bracket progression let every downstream API return meaningful responses during development — no placeholder data, no guessing at edge cases.
+
 - 32 teams (Groups A–H, real coaches, FIFA rankings)
 - 8 venues (Qatar stadiums)
 - 736 players (23/team; detailed real squads for ARG, FRA, BRA, ENG, POR, CRO, MAR, GER)
@@ -80,6 +87,8 @@ Trigger: `update_player_stats` on `match_events` INSERT
 
 ### STEP-4: Database Connection Layer
 `backend/app/db/connection.py` — PyMySQL wrapper with connection pooling.
+
+**Purpose:** Provides a thin, safe wrapper around PyMySQL with connection pooling. Centralizing `query` and `execute` helpers ensures parameterized queries are used everywhere — eliminating SQL injection at the library boundary rather than relying on per-call discipline across every route.
 
 - `get_connection()` — pool size 20
 - `query(sql, params)` — parameterized SELECT, returns list of dicts
@@ -95,6 +104,8 @@ Trigger: `update_player_stats` on `match_events` INSERT
 
 ### STEP-5: Redis Session Layer
 `backend/app/auth/session.py`
+
+**Purpose:** Implements server-side session storage in Redis with a 24-hour TTL, per-user session cap of 5, and an audit trail in MySQL. Keeping session data server-side means the server can invalidate sessions instantly — a hard requirement for logout, password change, and account lock — none of which are possible with stateless JWTs or signed cookies alone.
 
 - `create_session(user_id, username, is_admin, favorite_team)` → UUID4 session_id
   - Redis key `session:{id}`, 24h TTL
@@ -114,6 +125,8 @@ Trigger: `update_player_stats` on `match_events` INSERT
 ### STEP-6: Auth API
 `backend/app/routes/auth.py`
 
+**Purpose:** Exposes registration, login, and logout endpoints. Handles bcrypt hashing, account locking after 10 failed attempts, and per-IP rate limiting so the auth surface is hardened before any user-facing features are built on top of it. All authenticated features in the app depend on this step producing a valid session cookie.
+
 `POST /api/auth/register` — validate, bcrypt hash (12 rounds), insert user, create session, set cookie
   - Rate limit: 5/hour per IP (`ratelimit:register:{ip}`)
   - 409 on duplicate username/email
@@ -132,6 +145,8 @@ Trigger: `update_player_stats` on `match_events` INSERT
 ### STEP-7: Auth Middleware
 `backend/app/auth/middleware.py`
 
+**Purpose:** Provides `@require_auth` and `@require_admin` decorators that validate the session cookie and attach the user to the Flask request context via `g.user`. Centralizing this logic means every protected route gets consistent, tested auth enforcement with a single decorator — no route can accidentally skip the check.
+
 - `@require_auth` — reads cookie, calls `get_session`, attaches `g.user`; 401 if missing/expired
 - `@require_admin` — wraps `@require_auth`, checks `g.user['is_admin']`; 403 if not
 
@@ -146,6 +161,8 @@ Trigger: `update_player_stats` on `match_events` INSERT
 
 ### ✅ STEP-8: Teams API
 `backend/app/routes/teams.py`
+
+**Purpose:** Lets the frontend fetch all 32 teams (optionally filtered by group) and retrieve a full 23-player squad for any team. Used to power group-stage tabs, team picker dropdowns in match filters, and team detail pages — any view that needs to display who is in the tournament.
 
 `GET /api/teams` — all 32 teams sorted by group then name; optional `?group=A` filters to 4 teams in that group.
 `GET /api/teams/{id}` — team metadata + full 23-player squad ordered by jersey number. 404 if not found.
@@ -184,6 +201,8 @@ Returns team info plus `players` array. Teams with real squads (ARG, FRA, BRA, E
 
 ### ✅ STEP-9: Matches API
 `backend/app/routes/matches.py`
+
+**Purpose:** Exposes the full 64-match schedule with combinable filters and match detail with embedded team/venue objects. The embedded shape means the frontend can render a complete match card from a single API response without needing follow-up requests for team or venue data, keeping the Matches page fast.
 
 `GET /api/matches` — all 64 matches ordered by date. Combinable filters: `?date=YYYY-MM-DD`, `?stage=group|round_of_16|quarterfinal|semifinal|third_place|final`, `?team_id=N`, `?venue_id=N`.
 `GET /api/matches/{id}` — match detail with nested home/away team objects, venue, and `events` array ordered by minute. 404 if not found.
@@ -233,6 +252,8 @@ Each match embeds team and venue objects so the frontend never needs a second re
 ### ✅ STEP-10: Venues API
 `backend/app/routes/venues.py`
 
+**Purpose:** Returns all 8 Qatar stadiums so the frontend can populate venue filter dropdowns on the Matches page. Kept as a separate endpoint so venue data is fetched once and cached client-side rather than repeated inside every match response, which would bloat the 64-match payload unnecessarily.
+
 `GET /api/venues` — all 8 Qatar stadiums sorted by name, including capacity. Used to populate venue filter dropdowns.
 
 **Sample: `GET /api/venues`**
@@ -257,6 +278,8 @@ Each match embeds team and venue objects so the frontend never needs a second re
 
 ### ✅ STEP-11: Player Leaderboards API
 `backend/app/routes/leaderboards.py`
+
+**Purpose:** Surfaces the top 10 scorers and top 10 assisters for the tournament, giving users a quick view of individual standout performances. Reads from pre-aggregated `goals` and `assists` columns on the `players` table (kept current by the `update_player_stats` trigger), so responses are a simple sorted query rather than a live aggregation over match events.
 
 `GET /api/leaderboards/goals` — top 10 scorers, sorted goals DESC then assists DESC. Includes team name and country code.
 `GET /api/leaderboards/assists` — top 10 assisters, sorted assists DESC then goals DESC.
@@ -292,6 +315,8 @@ Messi and Griezmann tied on 3 assists; tie-broken by goals (Messi: 7, Griezmann:
 ### ✅ STEP-12: Group Standings API
 `backend/app/routes/standings.py`
 
+**Purpose:** Returns the current group standings table for each of the 8 groups, calculated by the `get_group_standings` stored procedure. The tiebreaker order (points → goal difference → goals for → FIFA ranking) matches official FIFA rules, making this the authoritative source for who qualifies from each group.
+
 `GET /api/standings/group` — standings for all 8 groups as a single object keyed A–H. `?group=A` returns just that group.
 Delegates to the `get_group_standings(group)` MySQL stored procedure. Sorted by points → goal difference → goals for → FIFA ranking.
 Note: SUM() values from stored procedures come back as strings from PyMySQL — cast to `int` when doing arithmetic.
@@ -318,6 +343,8 @@ NED top (7 pts), SEN second (6 pts), ECU third (4 pts), QAT bottom (0 pts, -6 GD
 
 ### ✅ STEP-13: Knockout Bracket API
 `backend/app/routes/standings.py` (same file)
+
+**Purpose:** Returns the full knockout bracket as a single nested JSON object keyed by round, allowing the frontend to render the entire bracket — round of 16 through the final — in one API call with no client-side join logic. Having all 16 knockout matches in a single response makes it straightforward to draw the bracket tree left-to-right.
 
 `GET /api/standings/knockout` — full bracket as a single nested JSON object with 5 round keys.
 Each slot has `match_id`, `status`, `home_score`, `away_score`, `home_team`, `away_team`.
@@ -368,6 +395,8 @@ Match counts: `round_of_16` = 8, `quarterfinal` = 4, `semifinal` = 2, `third_pla
 
 ### ✅ STEP-14: Predictions API
 `backend/app/routes/predictions.py`
+
+**Purpose:** The core engagement feature. Lets authenticated users submit and revise score predictions for any scheduled match, view their full prediction history with points earned, and compete on a public leaderboard. Predictions are blocked on completed or live matches to prevent retroactive cheating — the gate is enforced server-side, not just in the UI.
 
 `POST /api/predictions/{match_id}` — `@require_auth`. Body: `{"home_score": N, "away_score": N}`. UPSERTs — first call returns 201, subsequent calls return 200. Rejects if match status is not `scheduled` (400).
 `GET /api/user/predictions` — `@require_auth`. Returns the logged-in user's predictions with match details and points earned (null until match completes and scoring runs).
@@ -423,8 +452,10 @@ Match counts: `round_of_16` = 8, `quarterfinal` = 4, `semifinal` = 2, `third_pla
 
 ---
 
-### STEP-15: Prediction Scoring
+### ✅ STEP-15: Prediction Scoring
 `backend/app/db/scoring.py`
+
+**Purpose:** Scores all outstanding predictions for a match after its result is finalized. Called by the admin score-update endpoint the moment a match transitions to `completed`. Delegates to the `calculate_prediction_points` stored procedure, which runs the scoring logic atomically inside the database — 3 points for an exact score, 1 point for the correct outcome, 0 otherwise.
 
 Called by admin match update after status → `completed`.
 Calls `calculate_prediction_points(match_id)`.
@@ -438,8 +469,10 @@ Calls `calculate_prediction_points(match_id)`.
 
 ## Phase 5 — User Profile & Admin
 
-### STEP-16: User Profile API
+### ✅ STEP-16: User Profile API
 `backend/app/routes/user.py`
+
+**Purpose:** Lets users manage their own account without admin involvement. Email updates, favorite team selection, and password changes are self-service. Password change is the security-sensitive operation here: it destroys all existing sessions (logging out any other active devices) and immediately issues a fresh session for the current request — so the user stays logged in but all stale sessions are invalidated. Soft delete preserves prediction history on the leaderboard while blocking future logins.
 
 `GET /api/user/profile`, `PUT /api/user/profile`, `PUT /api/user/favorite-team`
 `POST /api/user/change-password` — verify old, hash new, destroy all sessions, re-create
@@ -455,6 +488,8 @@ Calls `calculate_prediction_points(match_id)`.
 ### STEP-17: Activity Logging
 `backend/app/auth/activity.py`
 
+**Purpose:** Records a timestamped audit row for every significant user action (register, login, predict, password change, etc.) and surfaces the last 100 to the authenticated user on their profile page. Gives users transparency into their account activity and provides an audit trail for security investigations. Auto-purges records older than 90 days on read to bound storage growth without a background job.
+
 `log_activity(user_id, action, ip_address)` — INSERT into `user_activity`
 Auto-purge: records older than 90 days on read
 `GET /api/user/activity` — `@require_auth` — last 100 records
@@ -466,6 +501,8 @@ Auto-purge: records older than 90 days on read
 
 ### STEP-18: Admin API
 `backend/app/routes/admin.py` — all `@require_admin`
+
+**Purpose:** Provides the operational control plane for running the tournament hub. Score updates are the most critical path: marking a match `completed` triggers prediction scoring for all users who predicted that match. User lock/unlock handles account abuse. Session management lets admins force-logout a user. The stats endpoint gives a live snapshot of platform health. All endpoints are gated behind `@require_admin`.
 
 `PUT /api/admin/matches/{id}/score` — update score/status; calls scoring on completion
 `GET /api/admin/users`, `POST /api/admin/users/{id}/lock`, `POST /api/admin/users/{id}/unlock`
@@ -484,6 +521,8 @@ Auto-purge: records older than 90 days on read
 ### STEP-19: React App Setup
 Vite + React + TailwindCSS in `frontend/`.
 
+**Purpose:** Bootstraps the frontend application with the toolchain, routing, and shared infrastructure that all page components depend on. The Vite dev proxy routes `/api` requests to the Flask backend so there are no CORS issues during development. `AuthContext` provides login state to the entire component tree, and the protected route wrapper enforces authentication at the router level rather than inside each page.
+
 - Vite proxy: `/api` → `http://localhost:5000`
 - `AuthContext` — user state, login/logout helpers
 - `<Navbar>` + `<Outlet>` layout
@@ -496,6 +535,8 @@ Vite + React + TailwindCSS in `frontend/`.
 ### STEP-20: Auth Pages
 `Login.jsx`, `Register.jsx`
 
+**Purpose:** The entry point for all non-public features. Login accepts username or email to match the backend. Registration shows a password strength meter so users understand requirements before submitting rather than after a 400 response. Both forms display field-level errors from the API inline. Successful auth updates `AuthContext` and redirects without a full page reload.
+
 - Field errors from API; password strength meter on register
 - Auto-login redirect on success
 
@@ -504,11 +545,15 @@ Vite + React + TailwindCSS in `frontend/`.
 ### STEP-21: Home Page
 `Home.jsx` — today's matches; upcoming if none today; quick links
 
+**Purpose:** The landing page for returning users. Shows today's matches front and center so a user checking in on match day sees relevant content immediately. Falls back to the next scheduled matches when there are none today. Quick links to Standings, Predictions, and Leaderboard cover the other high-traffic destinations without requiring navigation.
+
 ---
 
 ### STEP-22: Matches Page + Match Detail
 `Matches.jsx` — filter bar (date, stage, team, venue); inline predict form
 `MatchDetail.jsx` — events timeline for completed matches
+
+**Purpose:** The primary browsing surface for the tournament. The filter bar lets users slice 64 matches by any combination of date, stage, team, or venue. The inline prediction form lets authenticated users submit a prediction without navigating away from the match list, reducing friction. Match detail shows the full events timeline (goals, cards, substitutions) for completed matches.
 
 ---
 
@@ -517,36 +562,50 @@ Vite + React + TailwindCSS in `frontend/`.
 - Group Stage: group selector A–H, table with MP/W/D/L/GF/GA/GD/Pts; top 2 highlighted
 - Knockout: bracket from `/api/standings/knockout`, rounds left-to-right
 
+**Purpose:** Covers both tournament phases in a single tabbed page. The group standings tab highlights the top 2 teams per group (who advance) to give users immediate visual clarity on who is through. The knockout bracket tab renders all 16 knockout matches as a visual bracket progressing left-to-right from round of 16 to the final.
+
 ---
 
 ### STEP-24: Teams Page + Team Detail
 `Teams.jsx` — group filter tabs; team cards
 `TeamDetail.jsx` — squad table (#, Name, Position)
 
+**Purpose:** Lets users explore the 32 participating teams, filtered by group. Team cards link to detail pages showing the full 23-player squad sorted by jersey number — useful for checking a player's position before making a prediction or browsing the leaderboard.
+
 ---
 
 ### STEP-25: Players Page
 `Players.jsx` — tabs: Top Scorers | Top Assists; 10 rows each
+
+**Purpose:** Highlights individual tournament performances. The two-tab layout mirrors the two leaderboard endpoints and gives users a quick way to see who is dominating the Golden Boot and assist charts without needing to browse through team rosters.
 
 ---
 
 ### STEP-26: Predictions Page
 `Predictions.jsx` — `@require_auth`; table with predicted/actual/points; inline edit for scheduled
 
+**Purpose:** The personal scorecard for each user. Shows the full prediction history with predicted scores, actual results, and points earned side by side. Scheduled matches show an inline edit form so users can revise their prediction before kickoff. Completed matches show the points outcome. This page is the primary feedback loop that drives re-engagement.
+
 ---
 
 ### STEP-27: Leaderboard Page
 `Leaderboard.jsx` — top 50 by points; current user highlighted
+
+**Purpose:** The competitive centerpiece of the app. Ranks the top 50 users by total prediction points and highlights the current user's row regardless of their rank, so they can see how they stack up even if they are outside the top 50. Exact score counts are shown as a secondary column to break ties visually.
 
 ---
 
 ### STEP-28: Profile Page
 `Profile.jsx` — `@require_auth`; update email/team; change password; activity log; deactivate
 
+**Purpose:** Account management hub. Lets users update their email and favorite team, change their password (with confirmation of the old one), review their recent activity log for security awareness, and deactivate their account if they want to leave. All profile API endpoints from STEP-16 are exercised here.
+
 ---
 
 ### STEP-29: Admin Page
 `Admin.jsx` — admin only; tabs: Match Management | User Management | System Stats
+
+**Purpose:** The operational dashboard for whoever is running the tournament hub. Match Management is the primary tab during the tournament — it's where scores get entered, which triggers prediction scoring for all users. User Management handles abuse cases (lock/unlock). System Stats gives a live view of active sessions, total users, and prediction volume over the last 24 hours.
 
 ---
 
@@ -556,12 +615,17 @@ Vite + React + TailwindCSS in `frontend/`.
 `wsgi.py` + `gunicorn.conf.py` (workers = 2×CPU+1, timeout 30s)
 Flask serves `frontend/dist/` as static files.
 
+**Purpose:** Collapses the two development servers (Flask on 5000, Vite on 5173) into a single deployable process. Gunicorn provides the multi-worker concurrency that Flask's built-in server cannot. Flask serving the built `frontend/dist/` means the same process handles both API requests and static file delivery — no separate static file server needed for a single-VM deployment.
+
 - Tests: `tests/test_step30_gunicorn.py` — gunicorn starts; `/api/teams` responds
 
 ---
 
 ### STEP-31: End-to-End Validation
-Manual + scripted run through all PRD flows:
+Manual + scripted run through all PRD flows.
+
+**Purpose:** Verifies that all 31 steps work correctly as an integrated system, not just in isolation. Unit and integration tests confirm individual endpoints; this step confirms the full user journeys — registration through prediction through scoring through leaderboard — produce correct results end-to-end. Also exercises the security flows: rate limits, account locking, admin-only gates, and session invalidation on password change.
+
 1. Register → auto-login
 2. Browse matches → predict → see in `/predictions`
 3. Admin updates score → predictions scored

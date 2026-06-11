@@ -128,15 +128,15 @@ if ! command -v node >/dev/null 2>&1; then
     fi
 fi
 
-if ! command -v mysql >/dev/null 2>&1; then
-    info "Installing MySQL client..."
+if ! command -v mysqld >/dev/null 2>&1; then
+    info "Installing MySQL server..."
     [[ -z "${_PKG_UPDATED:-}" ]] && { $PKG_UPDATE; _PKG_UPDATED=1; }
     if command -v apt-get >/dev/null; then
-        $PKG_INSTALL default-mysql-client || $PKG_INSTALL mysql-client
+        $PKG_INSTALL mysql-server
     elif command -v brew >/dev/null; then
-        brew install mysql-client && export PATH="/usr/local/opt/mysql-client/bin:$PATH"
+        brew install mysql
     else
-        $PKG_INSTALL mysql
+        $PKG_INSTALL mysql-server
     fi
 fi
 
@@ -150,6 +150,42 @@ if ! command -v redis-cli >/dev/null 2>&1; then
     else
         $PKG_INSTALL redis
     fi
+fi
+
+# -- Start MySQL if not running --------------------------------------------
+_mysql_start() {
+    if command -v systemctl >/dev/null 2>&1 && systemctl list-units --type=service 2>/dev/null | grep -q mysql; then
+        sudo systemctl start mysql 2>/dev/null || sudo systemctl start mysqld 2>/dev/null || true
+    elif command -v service >/dev/null 2>&1; then
+        sudo service mysql start 2>/dev/null || sudo service mysqld start 2>/dev/null || true
+    fi
+    # Last resort: start mysqld directly
+    if ! mysqladmin ping -s 2>/dev/null; then
+        info "Starting mysqld directly..."
+        sudo mysqld --user=mysql --daemonize 2>/dev/null || \
+        sudo mysqld_safe --user=mysql &>/dev/null & sleep 3
+    fi
+    mysqladmin ping -s 2>/dev/null || error "MySQL did not start"
+}
+
+if ! mysqladmin ping -s 2>/dev/null; then
+    info "Starting MySQL..."
+    _mysql_start
+fi
+
+# -- Start Redis if not running --------------------------------------------
+if ! redis-cli ping &>/dev/null; then
+    info "Starting Redis..."
+    if command -v systemctl >/dev/null 2>&1 && systemctl list-units --type=service 2>/dev/null | grep -q redis; then
+        sudo systemctl start redis 2>/dev/null || sudo systemctl start redis-server 2>/dev/null || true
+    elif command -v service >/dev/null 2>&1; then
+        sudo service redis-server start 2>/dev/null || true
+    fi
+    if ! redis-cli ping &>/dev/null; then
+        info "Starting redis-server directly..."
+        redis-server --daemonize yes
+    fi
+    redis-cli ping &>/dev/null || error "Redis did not start"
 fi
 
 # Verify all required tools are now present
@@ -175,11 +211,15 @@ DB_NAME="${DB_NAME:-worldcup}"
 
 # -- MySQL -----------------------------------------------------------------
 info "Setting up MySQL database '$DB_NAME'..."
-mysql -h "$DB_HOST" -u root -p \
-    -e "CREATE DATABASE IF NOT EXISTS \`$DB_NAME\`;
-        CREATE USER IF NOT EXISTS '$DB_USER'@'$DB_HOST' IDENTIFIED BY '$DB_PASSWORD';
-        GRANT ALL PRIVILEGES ON \`$DB_NAME\`.* TO '$DB_USER'@'$DB_HOST';
-        FLUSH PRIVILEGES;" 2>/dev/null || warn "Root MySQL setup skipped (may already exist)"
+# Try sudo mysql (socket auth, common on Ubuntu), then fall back to password auth
+sudo mysql 2>/dev/null <<SQL || \
+mysql -h "$DB_HOST" -u root -p 2>/dev/null <<SQL || \
+warn "Root MySQL setup skipped (may already exist or need manual setup)"
+CREATE DATABASE IF NOT EXISTS \`$DB_NAME\`;
+CREATE USER IF NOT EXISTS '$DB_USER'@'$DB_HOST' IDENTIFIED BY '$DB_PASSWORD';
+GRANT ALL PRIVILEGES ON \`$DB_NAME\`.* TO '$DB_USER'@'$DB_HOST';
+FLUSH PRIVILEGES;
+SQL
 
 info "Applying schema..."
 mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" < "$BACKEND/schema.sql"

@@ -24,7 +24,7 @@ Each step includes a test file in `backend/tests/`. Run all tests with `pytest` 
 | STEP-11 | Player Leaderboards API | ✅ done |
 | STEP-12 | Group Standings API | ✅ done |
 | STEP-13 | Knockout Bracket API | ✅ done |
-| STEP-14 | Predictions API | ⬜ |
+| STEP-14 | Predictions API | ✅ done |
 | STEP-15 | Prediction Scoring | ⬜ |
 | STEP-16 | User Profile API | ⬜ |
 | STEP-17 | Activity Logging | ⬜ |
@@ -366,12 +366,55 @@ Match counts: `round_of_16` = 8, `quarterfinal` = 4, `semifinal` = 2, `third_pla
 
 ## Phase 4 — Predictions
 
-### STEP-14: Predictions API
+### ✅ STEP-14: Predictions API
 `backend/app/routes/predictions.py`
 
-`POST /api/predictions/{match_id}` — `@require_auth`, UPSERT; match must be `scheduled`
-`GET /api/user/predictions` — `@require_auth` — user's predictions with match info and points
-`GET /api/predictions/leaderboard` — public — top 50 by SUM(points_earned) + exact_count
+`POST /api/predictions/{match_id}` — `@require_auth`. Body: `{"home_score": N, "away_score": N}`. UPSERTs — first call returns 201, subsequent calls return 200. Rejects if match status is not `scheduled` (400).
+`GET /api/user/predictions` — `@require_auth`. Returns the logged-in user's predictions with match details and points earned (null until match completes and scoring runs).
+`GET /api/predictions/leaderboard` — public. Top 50 users by total `points_earned` DESC, then `exact_count` DESC. Returns 0 points for users with no scored predictions yet.
+
+**Sample: `POST /api/predictions/1`** (first submission → 201)
+```json
+{ "created": true }
+```
+
+**Sample: `POST /api/predictions/1`** (update same match → 200)
+```json
+{ "updated": true }
+```
+
+**Sample: `POST /api/predictions/2`** (match already completed → 400)
+```json
+{ "error": "predictions only allowed for scheduled matches" }
+```
+
+**Sample: `GET /api/user/predictions`**
+`points_earned` is null until admin marks the match completed and scoring runs (STEP-15).
+```json
+[
+  {
+    "id": 6,
+    "match_id": 1,
+    "predicted_home": 0, "predicted_away": 2,
+    "actual_home": 0,    "actual_away": 2,
+    "points_earned": null,
+    "home_team": "Qatar", "away_team": "Ecuador",
+    "match_date": "2022-11-20T19:00:00",
+    "stage": "group", "status": "scheduled",
+    "created_at": "2026-06-11T06:32:19",
+    "updated_at": "2026-06-11T06:32:19"
+  }
+]
+```
+
+**Sample: `GET /api/predictions/leaderboard`**
+`total_points` and `exact_count` come back as strings from MySQL aggregation — cast to int in frontend.
+```json
+[
+  { "id": 42, "username": "alice", "total_points": "12", "exact_count": "3" },
+  { "id": 17, "username": "bob",   "total_points":  "9", "exact_count": "2" }
+]
+```
 
 - Tests: `tests/test_step14_predictions.py`
   - Predict on completed match → 400

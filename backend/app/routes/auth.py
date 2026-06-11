@@ -5,6 +5,7 @@ from datetime import datetime
 import bcrypt
 from flask import Blueprint, jsonify, make_response, request
 
+from app.auth.activity import log_activity
 from app.auth.ratelimit import check_rate_limit
 from app.auth.session import create_session, destroy_session
 from app.db.connection import execute, query
@@ -84,6 +85,7 @@ def register():
     )
 
     session_id = create_session(uid, username, False, None)
+    log_activity(uid, "register", request.remote_addr or "")
     resp = make_response(jsonify({"id": uid, "username": username, "is_admin": False}), 201)
     return _set_cookie(resp, session_id)
 
@@ -127,6 +129,7 @@ def login():
 
     execute("UPDATE users SET failed_login_count = 0, locked_until = NULL WHERE id = %s", (user["id"],))
     session_id = create_session(user["id"], user["username"], bool(user["is_admin"]), user["favorite_team_id"])
+    log_activity(user["id"], "login", request.remote_addr or "")
     resp = make_response(jsonify({"id": user["id"], "username": user["username"], "is_admin": bool(user["is_admin"])}), 200)
     return _set_cookie(resp, session_id)
 

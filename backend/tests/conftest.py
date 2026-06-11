@@ -23,3 +23,10 @@ def db():
 @pytest.fixture(scope="session")
 def redis_client():
     return redis.from_url(os.environ["REDIS_URL"])
+
+
+@pytest.fixture(scope="session", autouse=True)
+def clear_rate_limits():
+    r = redis.from_url(os.environ["REDIS_URL"])
+    for key in r.scan_iter("ratelimit:*"):
+        r.delete(key)

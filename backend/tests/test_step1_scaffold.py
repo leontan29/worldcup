@@ -17,7 +17,7 @@ def test_all_blueprints_registered():
     app = create_app()
     names = {bp for bp in app.blueprints}
     expected = {"auth", "teams", "matches", "venues", "leaderboards",
-                "standings", "predictions", "user", "admin"}
+                "standings", "predictions", "user", "admin", "activity"}
     assert expected == names
 
 

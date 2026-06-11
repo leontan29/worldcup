@@ -24,6 +24,7 @@ def user(app):
     if rows:
         stale = rows[0]["id"]
         execute("DELETE FROM predictions WHERE user_id = %s", (stale,))
+        execute("DELETE FROM user_activity WHERE user_id = %s", (stale,))
         execute("DELETE FROM session_audit WHERE user_id = %s", (stale,))
         execute("DELETE FROM users WHERE id = %s", (stale,))
     uid, _ = execute(
@@ -32,6 +33,7 @@ def user(app):
     )
     yield uid
     execute("DELETE FROM predictions WHERE user_id = %s", (uid,))
+    execute("DELETE FROM user_activity WHERE user_id = %s", (uid,))
     execute("DELETE FROM session_audit WHERE user_id = %s", (uid,))
     execute("DELETE FROM users WHERE id = %s", (uid,))
 

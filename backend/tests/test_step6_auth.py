@@ -15,16 +15,22 @@ def client():
         yield c
 
 
-@pytest.fixture(autouse=True)
-def cleanup():
-    yield
+def _wipe():
     execute("DELETE FROM session_audit WHERE user_id IN (SELECT id FROM users WHERE username LIKE '_auth_%')")
+    execute("DELETE FROM user_activity WHERE user_id IN (SELECT id FROM users WHERE username LIKE '_auth_%')")
     execute("DELETE FROM users WHERE username LIKE '_auth_%'")
     r = get_redis()
     for key in r.scan_iter("ratelimit:register:*"):
         r.delete(key)
     for key in r.scan_iter("ratelimit:login:*"):
         r.delete(key)
+
+
+@pytest.fixture(autouse=True)
+def cleanup():
+    _wipe()
+    yield
+    _wipe()
 
 
 # ── Register ──────────────────────────────────────────────────────────────────

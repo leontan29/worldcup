@@ -13,6 +13,7 @@ def create_app():
     CORS(app, origins=os.environ.get("CORS_ORIGINS", "").split(","), supports_credentials=True)
 
     from .routes import auth, teams, matches, venues, leaderboards, standings, predictions, user, admin
+    from .auth import activity
     app.register_blueprint(auth.bp)
     app.register_blueprint(teams.bp)
     app.register_blueprint(matches.bp)
@@ -22,5 +23,6 @@ def create_app():
     app.register_blueprint(predictions.bp)
     app.register_blueprint(user.bp)
     app.register_blueprint(admin.bp)
+    app.register_blueprint(activity.bp)
 
     return app

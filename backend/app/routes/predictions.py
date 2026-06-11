@@ -1,5 +1,6 @@
 from flask import Blueprint, g, jsonify, request
 
+from app.auth.activity import log_activity
 from app.auth.middleware import require_auth
 from app.db.connection import execute, query
 
@@ -36,6 +37,7 @@ def upsert_prediction(match_id):
         "INSERT INTO predictions (user_id, match_id, home_score, away_score) VALUES (%s, %s, %s, %s)",
         (g.user["user_id"], match_id, home_score, away_score)
     )
+    log_activity(g.user["user_id"], "predict", request.remote_addr or "")
     return jsonify({"created": True}), 201
 
 

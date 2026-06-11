@@ -175,8 +175,10 @@ BEGIN
         END) AS losses,
         SUM(CASE WHEN m.home_team_id = t.id THEN m.home_score ELSE m.away_score END) AS goals_for,
         SUM(CASE WHEN m.home_team_id = t.id THEN m.away_score ELSE m.home_score END) AS goals_against,
-        SUM(CASE WHEN m.home_team_id = t.id THEN m.home_score - m.away_score
-                 ELSE m.away_score - m.home_score END) AS goal_difference,
+        SUM(CASE WHEN m.home_team_id = t.id
+                 THEN CAST(m.home_score AS SIGNED) - CAST(m.away_score AS SIGNED)
+                 ELSE CAST(m.away_score AS SIGNED) - CAST(m.home_score AS SIGNED)
+             END) AS goal_difference,
         SUM(CASE
             WHEN (m.home_team_id = t.id AND m.home_score > m.away_score)
               OR (m.away_team_id = t.id AND m.away_score > m.home_score) THEN 3

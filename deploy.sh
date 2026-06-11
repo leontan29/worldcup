@@ -163,9 +163,14 @@ _mysql_start() {
     if ! mysqladmin ping -s 2>/dev/null; then
         info "Starting mysqld directly..."
         sudo mysqld --user=mysql --daemonize 2>/dev/null || \
-        sudo mysqld_safe --user=mysql &>/dev/null & sleep 3
+        sudo mysqld_safe --user=mysql &>/dev/null &
     fi
-    mysqladmin ping -s 2>/dev/null || error "MySQL did not start"
+    # Wait up to 15s for MySQL to be ready
+    for i in $(seq 1 15); do
+        mysqladmin ping -s 2>/dev/null && break
+        sleep 1
+    done
+    mysqladmin ping -s 2>/dev/null || error "MySQL did not start after 15s"
 }
 
 if ! mysqladmin ping -s 2>/dev/null; then

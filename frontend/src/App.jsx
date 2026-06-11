@@ -1,6 +1,9 @@
 import { Routes, Route, Outlet } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import ProtectedRoute from './components/ProtectedRoute'
+import Home from './pages/Home'
+import Login from './pages/Login'
+import Register from './pages/Register'
 
 function Layout() {
   return (
@@ -19,7 +22,7 @@ export default function App() {
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route path="/" element={<Placeholder name="Home" />} />
+        <Route path="/" element={<Home />} />
         <Route path="/matches" element={<Placeholder name="Matches" />} />
         <Route path="/matches/:id" element={<Placeholder name="Match Detail" />} />
         <Route path="/standings" element={<Placeholder name="Standings" />} />
@@ -27,8 +30,8 @@ export default function App() {
         <Route path="/teams/:id" element={<Placeholder name="Team Detail" />} />
         <Route path="/players" element={<Placeholder name="Players" />} />
         <Route path="/leaderboard" element={<Placeholder name="Leaderboard" />} />
-        <Route path="/login" element={<Placeholder name="Login" />} />
-        <Route path="/register" element={<Placeholder name="Register" />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         <Route path="/predictions" element={
           <ProtectedRoute><Placeholder name="Predictions" /></ProtectedRoute>
         } />

@@ -216,15 +216,17 @@ DB_NAME="${DB_NAME:-worldcup}"
 
 # -- MySQL -----------------------------------------------------------------
 info "Setting up MySQL database '$DB_NAME'..."
-# Try sudo mysql (socket auth, common on Ubuntu), then fall back to password auth
-sudo mysql 2>/dev/null <<SQL || \
-mysql -h "$DB_HOST" -u root -p 2>/dev/null <<SQL || \
-warn "Root MySQL setup skipped (may already exist or need manual setup)"
+_SETUP_SQL="
 CREATE DATABASE IF NOT EXISTS \`$DB_NAME\`;
 CREATE USER IF NOT EXISTS '$DB_USER'@'$DB_HOST' IDENTIFIED BY '$DB_PASSWORD';
 GRANT ALL PRIVILEGES ON \`$DB_NAME\`.* TO '$DB_USER'@'$DB_HOST';
 FLUSH PRIVILEGES;
-SQL
+"
+# Try socket auth (Ubuntu default), then password auth
+if ! echo "$_SETUP_SQL" | sudo mysql 2>/dev/null; then
+    echo "$_SETUP_SQL" | mysql -h "$DB_HOST" -u root -p 2>/dev/null || \
+        warn "Root MySQL setup skipped (may already exist or need manual setup)"
+fi
 
 info "Applying schema..."
 mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" < "$BACKEND/schema.sql"

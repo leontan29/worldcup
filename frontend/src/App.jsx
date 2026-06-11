@@ -4,6 +4,16 @@ import ProtectedRoute from './components/ProtectedRoute'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import Matches from './pages/Matches'
+import MatchDetail from './pages/MatchDetail'
+import Standings from './pages/Standings'
+import Teams from './pages/Teams'
+import TeamDetail from './pages/TeamDetail'
+import Players from './pages/Players'
+import Leaderboard from './pages/Leaderboard'
+import Predictions from './pages/Predictions'
+import Profile from './pages/Profile'
+import Admin from './pages/Admin'
 
 function Layout() {
   return (
@@ -16,30 +26,28 @@ function Layout() {
   )
 }
 
-const Placeholder = ({ name }) => <div className="p-4 text-gray-500">{name}</div>
-
 export default function App() {
   return (
     <Routes>
       <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
-        <Route path="/matches" element={<Placeholder name="Matches" />} />
-        <Route path="/matches/:id" element={<Placeholder name="Match Detail" />} />
-        <Route path="/standings" element={<Placeholder name="Standings" />} />
-        <Route path="/teams" element={<Placeholder name="Teams" />} />
-        <Route path="/teams/:id" element={<Placeholder name="Team Detail" />} />
-        <Route path="/players" element={<Placeholder name="Players" />} />
-        <Route path="/leaderboard" element={<Placeholder name="Leaderboard" />} />
+        <Route path="/matches" element={<Matches />} />
+        <Route path="/matches/:id" element={<MatchDetail />} />
+        <Route path="/standings" element={<Standings />} />
+        <Route path="/teams" element={<Teams />} />
+        <Route path="/teams/:id" element={<TeamDetail />} />
+        <Route path="/players" element={<Players />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/predictions" element={
-          <ProtectedRoute><Placeholder name="Predictions" /></ProtectedRoute>
+          <ProtectedRoute><Predictions /></ProtectedRoute>
         } />
         <Route path="/profile" element={
-          <ProtectedRoute><Placeholder name="Profile" /></ProtectedRoute>
+          <ProtectedRoute><Profile /></ProtectedRoute>
         } />
         <Route path="/admin" element={
-          <ProtectedRoute adminOnly><Placeholder name="Admin" /></ProtectedRoute>
+          <ProtectedRoute adminOnly><Admin /></ProtectedRoute>
         } />
       </Route>
     </Routes>

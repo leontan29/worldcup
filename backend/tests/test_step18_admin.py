@@ -126,37 +126,48 @@ def test_update_match_score(client, admin_user):
 
 
 def test_score_update_triggers_prediction_scoring(client, admin_user):
-    scheduled = query("SELECT id FROM matches WHERE status = 'scheduled' LIMIT 1")
-    if not scheduled:
-        pytest.skip("no scheduled matches available")
-    mid = scheduled[0]["id"]
+    # use match 1 (Qatar 0-2 Ecuador); save original state, set to scheduled
+    mid = 1
+    orig = query("SELECT home_score, away_score, status, winner_team_id FROM matches WHERE id = %s", (mid,))[0]
+    execute("UPDATE matches SET status = 'scheduled', home_score = NULL, away_score = NULL WHERE id = %s", (mid,))
 
-    # create a prediction for that match
+    # pre-clean test user if leftover from failed run
+    stale = query("SELECT id FROM users WHERE username = '_score_trig'")
+    if stale:
+        sid = stale[0]["id"]
+        execute("DELETE FROM predictions WHERE user_id = %s", (sid,))
+        execute("DELETE FROM user_activity WHERE user_id = %s", (sid,))
+        execute("DELETE FROM session_audit WHERE user_id = %s", (sid,))
+        execute("DELETE FROM users WHERE id = %s", (sid,))
+
     uid, _ = execute(
         "INSERT INTO users (username, email, password_hash) VALUES (%s, %s, %s)",
         ("_score_trig", "_score_trig@test.com", "placeholder"),
     )
+    # predict exact score 2-1 (wrong — gets 0 pts) and another user predicts correct outcome
     execute(
         "INSERT INTO predictions (user_id, match_id, home_score, away_score) VALUES (%s, %s, %s, %s)",
-        (uid, mid, 1, 0),
+        (uid, mid, 0, 2),  # exact match → 3 pts
     )
 
-    # admin marks completed with matching score
-    execute("UPDATE matches SET home_score = 1, away_score = 0 WHERE id = %s", (mid,))
     _login_admin(client, admin_user)
     resp = client.put(f"/api/admin/matches/{mid}/score",
-                      json={"home_score": 1, "away_score": 0, "status": "completed"})
+                      json={"home_score": 0, "away_score": 2, "status": "completed"})
     _logout(client)
     assert resp.status_code == 200
 
     pred = query("SELECT points_earned FROM predictions WHERE user_id = %s AND match_id = %s", (uid, mid))
     assert pred[0]["points_earned"] == 3
 
-    # cleanup
+    # restore match and remove test user
+    execute(
+        "UPDATE matches SET status = %s, home_score = %s, away_score = %s, winner_team_id = %s WHERE id = %s",
+        (orig["status"], orig["home_score"], orig["away_score"], orig["winner_team_id"], mid),
+    )
     execute("DELETE FROM predictions WHERE user_id = %s", (uid,))
+    execute("DELETE FROM user_activity WHERE user_id = %s", (uid,))
     execute("DELETE FROM session_audit WHERE user_id = %s", (uid,))
     execute("DELETE FROM users WHERE id = %s", (uid,))
-    execute("UPDATE matches SET status = 'scheduled' WHERE id = %s", (mid,))
 
 
 def test_list_sessions(client, admin_user):

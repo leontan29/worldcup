@@ -23,6 +23,7 @@ def user(app):
     rows = query("SELECT id FROM users WHERE username = '_profile_user'")
     if rows:
         uid = rows[0]["id"]
+        execute("DELETE FROM user_activity WHERE user_id = %s", (uid,))
         execute("DELETE FROM session_audit WHERE user_id = %s", (uid,))
         execute("DELETE FROM users WHERE id = %s", (uid,))
     pw_hash = bcrypt.hashpw(b"OldPass1!", bcrypt.gensalt(4)).decode()
@@ -32,6 +33,25 @@ def user(app):
     )
     yield uid
     execute("DELETE FROM predictions WHERE user_id = %s", (uid,))
+    execute("DELETE FROM user_activity WHERE user_id = %s", (uid,))
+    execute("DELETE FROM session_audit WHERE user_id = %s", (uid,))
+    execute("DELETE FROM users WHERE id = %s", (uid,))
+
+
+@pytest.fixture(scope="module")
+def other_user(app):
+    rows = query("SELECT id FROM users WHERE username = '_profile_other'")
+    if rows:
+        uid = rows[0]["id"]
+        execute("DELETE FROM user_activity WHERE user_id = %s", (uid,))
+        execute("DELETE FROM session_audit WHERE user_id = %s", (uid,))
+        execute("DELETE FROM users WHERE id = %s", (uid,))
+    uid, _ = execute(
+        "INSERT INTO users (username, email, password_hash) VALUES (%s, %s, %s)",
+        ("_profile_other", "_profile_other@test.com", "placeholder"),
+    )
+    yield uid
+    execute("DELETE FROM user_activity WHERE user_id = %s", (uid,))
     execute("DELETE FROM session_audit WHERE user_id = %s", (uid,))
     execute("DELETE FROM users WHERE id = %s", (uid,))
 
@@ -70,13 +90,9 @@ def test_update_profile_email_persists(client, user):
     assert rows[0]["email"] == "_profile_updated@test.com"
 
 
-def test_update_profile_duplicate_email_returns_409(client, user):
-    # get an email that belongs to another user
-    rows = query("SELECT email FROM users WHERE id != %s LIMIT 1", (user,))
-    if not rows:
-        pytest.skip("no other users to conflict with")
+def test_update_profile_duplicate_email_returns_409(client, user, other_user):
     _login(client, user)
-    resp = client.put("/api/user/profile", json={"email": rows[0]["email"]})
+    resp = client.put("/api/user/profile", json={"email": "_profile_other@test.com"})
     _logout(client)
     assert resp.status_code == 409
 

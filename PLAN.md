@@ -27,9 +27,9 @@ Each step includes a test file in `backend/tests/`. Run all tests with `pytest` 
 | STEP-14 | Predictions API | ✅ done |
 | STEP-15 | Prediction Scoring | ✅ done |
 | STEP-16 | User Profile API | ✅ done |
-| STEP-17 | Activity Logging | ⬜ |
-| STEP-18 | Admin API | ⬜ |
-| STEP-19 | React App Setup | ⬜ |
+| STEP-17 | Activity Logging | ✅ done |
+| STEP-18 | Admin API | ✅ done |
+| STEP-19 | React App Setup | ✅ done |
 | STEP-20 | Auth Pages | ⬜ |
 | STEP-21 | Home Page | ⬜ |
 | STEP-22 | Matches Page + Match Detail | ⬜ |

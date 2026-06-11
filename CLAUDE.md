@@ -60,7 +60,15 @@ For multi-step tasks, state a brief plan:
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
-## 5. Pre-Commit Gate
+## 5. Tests Per Step
+
+**Every implemented step must have a corresponding test file.**
+
+- Each STEP-N implementation must include `backend/tests/test_stepN_*.py`.
+- Tests must cover the success cases and at least one failure/edge case described in PLAN.md.
+- Write the test file in the same commit as the implementation.
+
+## 6. Pre-Commit Gate
 
 **All tests must pass before every commit.**
 
@@ -68,7 +76,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - Do not commit if any test fails. Fix the failure first.
 - If a test is legitimately broken by intentional change, update the test in the same commit.
 
-## 6. Checkpoints
+## 7. Checkpoints
 
 - Do not run `sprite-env checkpoints create` automatically.
 - Only create a checkpoint when explicitly asked by the user.

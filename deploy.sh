@@ -3,52 +3,93 @@ set -euo pipefail
 
 # ---------------------------------------------------------------------------
 # WorldCup Hub — deployment script
-# Usage: ./deploy.sh [--update]
-#   (no flag)  : fresh install
-#   --update   : pull latest code, rebuild frontend, restart service
+# Usage: ./deploy.sh [--update|--stop|--restart|--logs]
 # ---------------------------------------------------------------------------
 
 APP_DIR="$(cd "$(dirname "$0")" && pwd)"
-SERVICE_NAME="worldcup"
 BACKEND="$APP_DIR/backend"
 FRONTEND="$APP_DIR/frontend"
 ENV_FILE="$BACKEND/.env"
+PID_FILE="$APP_DIR/worldcup.pid"
+LOG_FILE="$APP_DIR/worldcup.log"
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
 info()  { echo -e "${GREEN}[deploy]${NC} $*"; }
 warn()  { echo -e "${YELLOW}[warn]${NC}  $*"; }
 error() { echo -e "${RED}[error]${NC} $*"; exit 1; }
 
+GUNICORN_BIN="$(command -v gunicorn 2>/dev/null || echo "$HOME/.local/bin/gunicorn")"
+
 # ---------------------------------------------------------------------------
-# Update-only path
+# Helpers
 # ---------------------------------------------------------------------------
-if [[ "${1:-}" == "--update" ]]; then
-    info "Pulling latest code..."
-    git -C "$APP_DIR" pull
 
-    info "Rebuilding frontend..."
-    cd "$FRONTEND" && npm install --silent && npm run build
+_start() {
+    source "$ENV_FILE"
+    info "Starting gunicorn..."
+    cd "$BACKEND"
+    nohup "$GUNICORN_BIN" wsgi:app --config gunicorn.conf.py \
+        >> "$LOG_FILE" 2>&1 &
+    echo $! > "$PID_FILE"
+    sleep 1
+    if kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+        info "Started (PID $(cat "$PID_FILE")). Logs: $LOG_FILE"
+    else
+        error "Failed to start — check $LOG_FILE"
+    fi
+}
 
-    info "Installing Python deps..."
-    pip install -r "$BACKEND/requirements.txt" -q
+_stop() {
+    if [[ -f "$PID_FILE" ]]; then
+        PID="$(cat "$PID_FILE")"
+        if kill -0 "$PID" 2>/dev/null; then
+            info "Stopping PID $PID..."
+            kill "$PID"
+            rm -f "$PID_FILE"
+        else
+            warn "Process $PID not running, removing stale PID file"
+            rm -f "$PID_FILE"
+        fi
+    else
+        warn "No PID file found — app may not be running"
+    fi
+}
 
-    info "Restarting service..."
-    sudo systemctl restart "$SERVICE_NAME"
-    sudo systemctl status "$SERVICE_NAME" --no-pager
-    exit 0
-fi
+# ---------------------------------------------------------------------------
+# Sub-commands
+# ---------------------------------------------------------------------------
+
+case "${1:-}" in
+    --stop)
+        _stop; exit 0 ;;
+    --restart)
+        _stop; sleep 1; _start; exit 0 ;;
+    --logs)
+        tail -f "$LOG_FILE"; exit 0 ;;
+    --update)
+        info "Pulling latest code..."
+        git -C "$APP_DIR" pull
+
+        info "Installing Python deps..."
+        pip install -r "$BACKEND/requirements.txt" -q
+
+        info "Rebuilding frontend..."
+        cd "$FRONTEND" && npm install --silent && npm run build && cd "$APP_DIR"
+
+        _stop; sleep 1; _start
+        exit 0 ;;
+esac
 
 # ---------------------------------------------------------------------------
 # Fresh install
 # ---------------------------------------------------------------------------
 
-# -- Check prerequisites ---------------------------------------------------
-command -v python3 >/dev/null || error "python3 not found"
-command -v pip    >/dev/null || error "pip not found"
-command -v node   >/dev/null || error "node not found"
-command -v npm    >/dev/null || error "npm not found"
-command -v mysql  >/dev/null || error "mysql client not found (install mysql-server)"
-command -v redis-cli >/dev/null || error "redis-cli not found (install redis-server)"
+command -v python3  >/dev/null || error "python3 not found"
+command -v pip      >/dev/null || error "pip not found"
+command -v node     >/dev/null || error "node not found"
+command -v npm      >/dev/null || error "npm not found"
+command -v mysql    >/dev/null || error "mysql client not found"
+command -v redis-cli >/dev/null || error "redis-cli not found"
 
 # -- .env ------------------------------------------------------------------
 if [[ ! -f "$ENV_FILE" ]]; then
@@ -85,45 +126,16 @@ info "Installing Python dependencies..."
 pip install -r "$BACKEND/requirements.txt" -q
 
 # -- Frontend --------------------------------------------------------------
-info "Installing Node dependencies..."
-cd "$FRONTEND" && npm install --silent
+info "Installing Node dependencies and building frontend..."
+cd "$FRONTEND" && npm install --silent && npm run build && cd "$APP_DIR"
 
-info "Building frontend..."
-npm run build
-cd "$APP_DIR"
+# -- Start -----------------------------------------------------------------
+_start
 
-# -- Systemd service -------------------------------------------------------
-PYTHON_BIN="$(command -v python3)"
-GUNICORN_BIN="$(command -v gunicorn || echo "$(dirname "$PYTHON_BIN")/gunicorn")"
-
-SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
-info "Writing systemd service to $SERVICE_FILE..."
-
-sudo tee "$SERVICE_FILE" > /dev/null <<EOF
-[Unit]
-Description=WorldCup Hub (Gunicorn)
-After=network.target mysql.service redis.service
-
-[Service]
-User=$USER
-WorkingDirectory=$BACKEND
-EnvironmentFile=$ENV_FILE
-ExecStart=$GUNICORN_BIN wsgi:app --config gunicorn.conf.py
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-sudo systemctl daemon-reload
-sudo systemctl enable "$SERVICE_NAME"
-sudo systemctl restart "$SERVICE_NAME"
-
-# -- Done ------------------------------------------------------------------
 echo
-info "Deployment complete."
-sudo systemctl status "$SERVICE_NAME" --no-pager
-echo
-info "App running on port 8080. To check logs: journalctl -u $SERVICE_NAME -f"
-info "To update later: ./deploy.sh --update"
+info "Deployment complete. App on port 8080."
+info "Commands:"
+info "  ./deploy.sh --update   pull + rebuild + restart"
+info "  ./deploy.sh --restart  restart"
+info "  ./deploy.sh --stop     stop"
+info "  ./deploy.sh --logs     tail logs"

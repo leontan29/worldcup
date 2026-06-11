@@ -30,16 +30,16 @@ Each step includes a test file in `backend/tests/`. Run all tests with `pytest` 
 | STEP-17 | Activity Logging | ✅ done |
 | STEP-18 | Admin API | ✅ done |
 | STEP-19 | React App Setup | ✅ done |
-| STEP-20 | Auth Pages | ⬜ |
-| STEP-21 | Home Page | ⬜ |
-| STEP-22 | Matches Page + Match Detail | ⬜ |
-| STEP-23 | Standings Page | ⬜ |
-| STEP-24 | Teams Page + Team Detail | ⬜ |
-| STEP-25 | Players Page | ⬜ |
-| STEP-26 | Predictions Page | ⬜ |
-| STEP-27 | Leaderboard Page | ⬜ |
-| STEP-28 | Profile Page | ⬜ |
-| STEP-29 | Admin Page | ⬜ |
+| STEP-20 | Auth Pages | ✅ done |
+| STEP-21 | Home Page | ✅ done |
+| STEP-22 | Matches Page + Match Detail | ✅ done |
+| STEP-23 | Standings Page | ✅ done |
+| STEP-24 | Teams Page + Team Detail | ✅ done |
+| STEP-25 | Players Page | ✅ done |
+| STEP-26 | Predictions Page | ✅ done |
+| STEP-27 | Leaderboard Page | ✅ done |
+| STEP-28 | Profile Page | ✅ done |
+| STEP-29 | Admin Page | ✅ done |
 | STEP-30 | Gunicorn Config | ⬜ |
 | STEP-31 | End-to-End Validation | ⬜ |
 
@@ -518,7 +518,7 @@ Auto-purge: records older than 90 days on read
 
 ## Phase 6 — Frontend
 
-### STEP-19: React App Setup
+### ✅ STEP-19: React App Setup
 Vite + React + TailwindCSS in `frontend/`.
 
 **Purpose:** Bootstraps the frontend application with the toolchain, routing, and shared infrastructure that all page components depend on. The Vite dev proxy routes `/api` requests to the Flask backend so there are no CORS issues during development. `AuthContext` provides login state to the entire component tree, and the protected route wrapper enforces authentication at the router level rather than inside each page.
@@ -529,10 +529,11 @@ Vite + React + TailwindCSS in `frontend/`.
 - Protected route wrapper → redirects to `/login`
 
 - Tests: `tests/test_step19_frontend.py` — `npm run build` exits 0; proxy config present
+- Frontend tests: Vitest + React Testing Library configured (`npm test` from `frontend/`); `src/test/` for component tests
 
 ---
 
-### STEP-20: Auth Pages
+### ✅ STEP-20: Auth Pages
 `Login.jsx`, `Register.jsx`
 
 **Purpose:** The entry point for all non-public features. Login accepts username or email to match the backend. Registration shows a password strength meter so users understand requirements before submitting rather than after a 400 response. Both forms display field-level errors from the API inline. Successful auth updates `AuthContext` and redirects without a full page reload.
@@ -542,14 +543,14 @@ Vite + React + TailwindCSS in `frontend/`.
 
 ---
 
-### STEP-21: Home Page
+### ✅ STEP-21: Home Page
 `Home.jsx` — today's matches; upcoming if none today; quick links
 
 **Purpose:** The landing page for returning users. Shows today's matches front and center so a user checking in on match day sees relevant content immediately. Falls back to the next scheduled matches when there are none today. Quick links to Standings, Predictions, and Leaderboard cover the other high-traffic destinations without requiring navigation.
 
 ---
 
-### STEP-22: Matches Page + Match Detail
+### ✅ STEP-22: Matches Page + Match Detail
 `Matches.jsx` — filter bar (date, stage, team, venue); inline predict form
 `MatchDetail.jsx` — events timeline for completed matches
 
@@ -557,7 +558,7 @@ Vite + React + TailwindCSS in `frontend/`.
 
 ---
 
-### STEP-23: Standings Page
+### ✅ STEP-23: Standings Page
 `Standings.jsx` — tabs: Group Stage | Knockout Bracket
 - Group Stage: group selector A–H, table with MP/W/D/L/GF/GA/GD/Pts; top 2 highlighted
 - Knockout: bracket from `/api/standings/knockout`, rounds left-to-right
@@ -566,7 +567,7 @@ Vite + React + TailwindCSS in `frontend/`.
 
 ---
 
-### STEP-24: Teams Page + Team Detail
+### ✅ STEP-24: Teams Page + Team Detail
 `Teams.jsx` — group filter tabs; team cards
 `TeamDetail.jsx` — squad table (#, Name, Position)
 
@@ -574,35 +575,35 @@ Vite + React + TailwindCSS in `frontend/`.
 
 ---
 
-### STEP-25: Players Page
+### ✅ STEP-25: Players Page
 `Players.jsx` — tabs: Top Scorers | Top Assists; 10 rows each
 
 **Purpose:** Highlights individual tournament performances. The two-tab layout mirrors the two leaderboard endpoints and gives users a quick way to see who is dominating the Golden Boot and assist charts without needing to browse through team rosters.
 
 ---
 
-### STEP-26: Predictions Page
+### ✅ STEP-26: Predictions Page
 `Predictions.jsx` — `@require_auth`; table with predicted/actual/points; inline edit for scheduled
 
 **Purpose:** The personal scorecard for each user. Shows the full prediction history with predicted scores, actual results, and points earned side by side. Scheduled matches show an inline edit form so users can revise their prediction before kickoff. Completed matches show the points outcome. This page is the primary feedback loop that drives re-engagement.
 
 ---
 
-### STEP-27: Leaderboard Page
+### ✅ STEP-27: Leaderboard Page
 `Leaderboard.jsx` — top 50 by points; current user highlighted
 
 **Purpose:** The competitive centerpiece of the app. Ranks the top 50 users by total prediction points and highlights the current user's row regardless of their rank, so they can see how they stack up even if they are outside the top 50. Exact score counts are shown as a secondary column to break ties visually.
 
 ---
 
-### STEP-28: Profile Page
+### ✅ STEP-28: Profile Page
 `Profile.jsx` — `@require_auth`; update email/team; change password; activity log; deactivate
 
 **Purpose:** Account management hub. Lets users update their email and favorite team, change their password (with confirmation of the old one), review their recent activity log for security awareness, and deactivate their account if they want to leave. All profile API endpoints from STEP-16 are exercised here.
 
 ---
 
-### STEP-29: Admin Page
+### ✅ STEP-29: Admin Page
 `Admin.jsx` — admin only; tabs: Match Management | User Management | System Stats
 
 **Purpose:** The operational dashboard for whoever is running the tournament hub. Match Management is the primary tab during the tournament — it's where scores get entered, which triggers prediction scoring for all users. User Management handles abuse cases (lock/unlock). System Stats gives a live view of active sessions, total users, and prediction volume over the last 24 hours.

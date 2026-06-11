@@ -40,8 +40,8 @@ Each step includes a test file in `backend/tests/`. Run all tests with `pytest` 
 | STEP-27 | Leaderboard Page | ✅ done |
 | STEP-28 | Profile Page | ✅ done |
 | STEP-29 | Admin Page | ✅ done |
-| STEP-30 | Gunicorn Config | ⬜ |
-| STEP-31 | End-to-End Validation | ⬜ |
+| STEP-30 | Gunicorn Config | ✅ done |
+| STEP-31 | End-to-End Validation | ✅ done |
 
 ---
 
@@ -612,7 +612,7 @@ Vite + React + TailwindCSS in `frontend/`.
 
 ## Phase 7 — Deployment
 
-### STEP-30: Gunicorn Config
+### ✅ STEP-30: Gunicorn Config
 `wsgi.py` + `gunicorn.conf.py` (workers = 2×CPU+1, timeout 30s)
 Flask serves `frontend/dist/` as static files.
 
@@ -622,7 +622,7 @@ Flask serves `frontend/dist/` as static files.
 
 ---
 
-### STEP-31: End-to-End Validation
+### ✅ STEP-31: End-to-End Validation
 Manual + scripted run through all PRD flows.
 
 **Purpose:** Verifies that all 31 steps work correctly as an integrated system, not just in isolation. Unit and integration tests confirm individual endpoints; this step confirms the full user journeys — registration through prediction through scoring through leaderboard — produce correct results end-to-end. Also exercises the security flows: rate limits, account locking, admin-only gates, and session invalidation on password change.

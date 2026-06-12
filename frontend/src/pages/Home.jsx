@@ -27,6 +27,11 @@ export default function Home() {
   const [matches, setMatches] = useState([])
   const [label, setLabel] = useState('')
   const [loading, setLoading] = useState(true)
+  const [info, setInfo] = useState(null)
+
+  useEffect(() => {
+    fetch('/api/info').then(r => r.json()).then(setInfo)
+  }, [])
 
   useEffect(() => {
     const today = new Date().toISOString().slice(0, 10)
@@ -57,7 +62,7 @@ export default function Home() {
     <div className="space-y-8">
       <div className="text-center py-8 bg-green-700 text-white rounded-xl">
         <h1 className="text-3xl font-bold mb-2">WorldCup Hub</h1>
-        <p className="text-green-200">2022 FIFA World Cup · Qatar</p>
+        <p className="text-green-200">{info ? `${info.year} FIFA World Cup · ${info.host}` : ''}</p>
         {!user && (
           <div className="mt-4 flex gap-3 justify-center">
             <Link to="/register" className="bg-white text-green-700 font-semibold px-4 py-2 rounded hover:bg-green-50">

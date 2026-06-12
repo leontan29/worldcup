@@ -32,7 +32,7 @@ function MatchManager() {
         <div key={m.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded text-sm">
           <span className="flex-1 font-medium">{m.home_team?.name} vs {m.away_team?.name}</span>
           <span className="text-xs text-gray-400 capitalize">
-            {m.stage?.replace(/_/g, ' ')}{m.group_name ? ` · Group ${m.group_name}` : ''}
+            {m.group_name ? `Group ${m.group_name}` : m.stage?.replace(/_/g, ' ')}
           </span>
           {edit.id === m.id ? (
             <>

@@ -1,0 +1,49 @@
+id,name,country_code,group_name,fifa_ranking,coach
+1,Mexico,MEX,A,17,Javier Aguirre
+2,South Korea,KOR,A,19,Hong Myung-bo
+3,South Africa,ZAF,A,33,Hugo Broos
+4,Czech Republic,CZE,A,37,Ivan Hasek
+5,Canada,CAN,B,21,Jesse Marsch
+6,Switzerland,SUI,B,16,Murat Yakin
+7,Qatar,QAT,B,39,Bartomeu Boades
+8,Bosnia-Herzegovina,BIH,B,45,Sergej Barbarez
+9,Brazil,BRA,C,5,Dorival Junior
+10,Morocco,MAR,C,11,Walid Regragui
+11,Scotland,SCO,C,31,Steve Clarke
+12,Haiti,HAI,C,47,Marc Collat
+13,United States,USA,D,13,Mauricio Pochettino
+14,Paraguay,PAR,D,32,Gustavo Alfaro
+15,Turkey,TUR,D,23,Vincenzo Montella
+16,Australia,AUS,D,25,Tony Popovic
+17,Germany,GER,E,7,Julian Nagelsmann
+18,Ecuador,ECU,E,20,Sebastien Beccacece
+19,Ivory Coast,CIV,E,27,Emerse Fae
+20,Curacao,CUW,E,48,Patrick Kluivert
+21,Netherlands,NED,F,8,Ronald Koeman
+22,Japan,JPN,F,12,Hajime Moriyasu
+23,Tunisia,TUN,F,34,Maher Kanzari
+24,Sweden,SWE,F,28,Jon Dahl Tomasson
+25,Belgium,BEL,G,9,Domenico Tedesco
+26,Iran,IRN,G,30,Amir Ghalenoei
+27,Egypt,EGY,G,29,Hossam Hassan
+28,New Zealand,NZL,G,38,Danny Hay
+29,Spain,ESP,H,3,Luis de la Fuente
+30,Uruguay,URU,H,10,Marcelo Bielsa
+31,Saudi Arabia,KSA,H,35,Roberto Mancini
+32,Cape Verde,CPV,H,46,Filemon Martins
+33,France,FRA,I,2,Didier Deschamps
+34,Senegal,SEN,I,18,Aliou Cisse
+35,Norway,NOR,I,24,Stale Solbakken
+36,Iraq,IRQ,I,40,Jesus Casas
+37,Argentina,ARG,J,1,Lionel Scaloni
+38,Austria,AUT,J,22,Ralf Rangnick
+39,Algeria,ALG,J,26,Vladimir Petkovic
+40,Jordan,JOR,J,41,Hussam Abu Alia
+41,Portugal,POR,K,6,Roberto Martinez
+42,Colombia,COL,K,14,Nestor Lorenzo
+43,Uzbekistan,UZB,K,42,Srecko Katanec
+44,DR Congo,COD,K,43,Sebastien Desabre
+45,England,ENG,L,4,Thomas Tuchel
+46,Croatia,CRO,L,15,Zlatko Dalic
+47,Panama,PAN,L,44,Thomas Christiansen
+48,Ghana,GHA,L,36,Otto Addo

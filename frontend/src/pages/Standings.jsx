@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react'
 
-const GROUPS = ['A','B','C','D','E','F','G','H']
-
 function GroupTable({ teams }) {
   return (
     <div className="overflow-x-auto">
@@ -53,12 +51,24 @@ function BracketRound({ label, matches }) {
 
 export default function Standings() {
   const [tab, setTab] = useState('group')
-  const [group, setGroup] = useState('A')
+  const [groups, setGroups] = useState([])
+  const [group, setGroup] = useState(null)
   const [standings, setStandings] = useState({})
   const [bracket, setBracket] = useState(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
+    fetch('/api/teams')
+      .then(r => r.json())
+      .then(teams => {
+        const g = [...new Set(teams.map(t => t.group_name))].sort()
+        setGroups(g)
+        setGroup(g[0] ?? 'A')
+      })
+  }, [])
+
+  useEffect(() => {
+    if (!group) return
     if (tab === 'group') {
       setLoading(true)
       fetch(`/api/standings/group?group=${group}`)
@@ -99,7 +109,7 @@ export default function Standings() {
       {tab === 'group' && (
         <div className="space-y-4">
           <div className="flex gap-2 flex-wrap">
-            {GROUPS.map(g => (
+            {groups.map(g => (
               <button key={g} onClick={() => setGroup(g)}
                 className={`w-10 h-10 rounded font-bold text-sm ${group === g ? 'bg-green-700 text-white' : 'bg-white shadow text-gray-600 hover:bg-gray-50'}`}>
                 {g}

@@ -18,7 +18,9 @@ function MatchCard({ match }) {
         </div>
         <div className="flex-1 font-medium">{match.away_team?.name}</div>
       </div>
-      <div className="text-xs text-center text-gray-400 mt-1 capitalize">{match.stage} · {match.status}</div>
+      <div className="text-xs text-center text-gray-400 mt-1 capitalize">
+        {match.group_name ? `Group ${match.group_name}` : match.stage?.replace(/_/g, ' ')} · {match.status}
+      </div>
     </Link>
   )
 }

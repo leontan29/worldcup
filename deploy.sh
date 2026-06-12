@@ -188,10 +188,12 @@ if ! redis-cli ping &>/dev/null; then
     fi
     if ! redis-cli ping &>/dev/null; then
         info "Starting redis-server directly..."
-        redis-server --daemonize yes
+        redis-server --daemonize yes --protected-mode no
     fi
     redis-cli ping &>/dev/null || error "Redis did not start"
 fi
+# Disable protected mode so local connections work regardless of bind config
+redis-cli CONFIG SET protected-mode no &>/dev/null || true
 
 # Verify all required tools are now present
 for cmd in python3 pip node npm mysql redis-cli; do

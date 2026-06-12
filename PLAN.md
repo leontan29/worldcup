@@ -478,6 +478,32 @@ Calls `calculate_prediction_points(match_id)`.
 `POST /api/user/change-password` — verify old, hash new, destroy all sessions, re-create
 `DELETE /api/user/profile` — soft delete (`is_active = false`)
 
+**Sample:**
+```
+GET /api/user/profile
+→ {
+    "id": 704, "username": "sampleuser",
+    "email": "sample@test.com",
+    "favorite_team_id": null,
+    "is_admin": false,
+    "created_at": "2026-06-12T21:18:01"
+  }
+
+PUT /api/user/profile  {"email": "newemail@test.com"}
+→ {"updated": true}
+
+PUT /api/user/favorite-team  {"team_id": 29}
+→ {"updated": true}
+
+POST /api/user/change-password  {"old_password": "Pass1234!", "new_password": "NewPass99@"}
+→ {"updated": true}
+  (all other sessions destroyed; new session cookie issued)
+
+DELETE /api/user/profile
+→ {"deleted": true}
+  (is_active=0; subsequent login returns 401)
+```
+
 - Tests: `tests/test_step16_user.py`
   - Profile update persists
   - Password change invalidates other sessions
@@ -485,7 +511,7 @@ Calls `calculate_prediction_points(match_id)`.
 
 ---
 
-### STEP-17: Activity Logging
+### ✅ STEP-17: Activity Logging
 `backend/app/auth/activity.py`
 
 **Purpose:** Records a timestamped audit row for every significant user action (register, login, predict, password change, etc.) and surfaces the last 100 to the authenticated user on their profile page. Gives users transparency into their account activity and provides an audit trail for security investigations. Auto-purges records older than 90 days on read to bound storage growth without a background job.
@@ -494,12 +520,23 @@ Calls `calculate_prediction_points(match_id)`.
 Auto-purge: records older than 90 days on read
 `GET /api/user/activity` — `@require_auth` — last 100 records
 
+**Sample:**
+```
+GET /api/user/activity
+→ [
+    {"id": 282, "action": "register", "ip_address": "127.0.0.1", "created_at": "2026-06-12T21:18:01"},
+    {"id": 283, "action": "login",    "ip_address": "127.0.0.1", "created_at": "2026-06-12T21:18:09"},
+    {"id": 284, "action": "predict",  "ip_address": "127.0.0.1", "created_at": "2026-06-12T21:19:44"}
+  ]
+```
+Actions logged: `register`, `login`, `predict`, `change_password`, `soft_delete`.
+
 - Tests: `tests/test_step17_activity.py`
   - register → login → predict produces 3 activity rows
 
 ---
 
-### STEP-18: Admin API
+### ✅ STEP-18: Admin API
 `backend/app/routes/admin.py` — all `@require_admin`
 
 **Purpose:** Provides the operational control plane for running the tournament hub. Score updates are the most critical path: marking a match `completed` triggers prediction scoring for all users who predicted that match. User lock/unlock handles account abuse. Session management lets admins force-logout a user. The stats endpoint gives a live snapshot of platform health. All endpoints are gated behind `@require_admin`.
@@ -508,6 +545,40 @@ Auto-purge: records older than 90 days on read
 `GET /api/admin/users`, `POST /api/admin/users/{id}/lock`, `POST /api/admin/users/{id}/unlock`
 `GET /api/admin/sessions`, `DELETE /api/admin/sessions/{user_id}`
 `GET /api/admin/stats` — active sessions, total users, predictions last 24h
+
+**Sample:**
+```
+GET /api/admin/stats
+→ {"active_sessions": 3, "total_users": 3, "predictions_24h": 0}
+
+GET /api/admin/users
+→ [
+    {"id": 606, "username": "leontan29", "email": "leontann29@gmail.com",
+     "is_admin": true, "is_active": true, "locked_until": null, "created_at": "..."},
+    ...
+  ]
+
+GET /api/admin/sessions
+→ [
+    {"session_id": "d1efef58-...", "user_id": 705, "username": "admin", "created_at": "..."},
+    ...
+  ]
+
+PUT /api/admin/matches/1/score  {"home_score": 2, "away_score": 1, "status": "completed"}
+→ {"updated": true}
+  (triggers CALL calculate_prediction_points(1) to award points to all predictors)
+
+POST /api/admin/users/704/lock  {"minutes": 30}
+→ {"locked": true}
+  (subsequent login by that user returns 423 "Account locked. Try again later.")
+
+POST /api/admin/users/704/unlock
+→ {"unlocked": true}
+
+DELETE /api/admin/sessions/704
+→ {"deleted": true}
+  (invalidates all Redis sessions for user 704)
+```
 
 - Tests: `tests/test_step18_admin.py`
   - Score update triggers prediction scoring

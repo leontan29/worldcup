@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { parseDate } from '../api/dates'
 
 export default function Profile() {
   const { user, logout } = useAuth()
@@ -120,7 +121,7 @@ export default function Profile() {
             {activity.map(a => (
               <div key={a.id} className="flex justify-between text-xs text-gray-500">
                 <span className="capitalize">{a.action}</span>
-                <span>{new Date(a.created_at).toLocaleString()}</span>
+                <span>{parseDate(a.created_at).toLocaleString()}</span>
               </div>
             ))}
           </div>

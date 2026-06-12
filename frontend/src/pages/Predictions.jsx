@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { parseDate } from '../api/dates'
 
 function PredictRow({ pred, onUpdate }) {
   const [home, setHome] = useState(String(pred.predicted_home))
@@ -26,7 +27,7 @@ function PredictRow({ pred, onUpdate }) {
     <tr className="border-b last:border-0">
       <td className="px-4 py-3 text-sm">
         <div className="font-medium">{pred.home_team} vs {pred.away_team}</div>
-        <div className="text-xs text-gray-400">{new Date(pred.match_date).toLocaleDateString()} · <span className="capitalize">{pred.stage}</span></div>
+        <div className="text-xs text-gray-400">{parseDate(pred.match_date).toLocaleDateString()} · <span className="capitalize">{pred.stage}</span></div>
       </td>
       <td className="px-4 py-3 text-center text-sm">
         {canEdit ? (

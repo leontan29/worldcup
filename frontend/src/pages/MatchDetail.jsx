@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { parseDate } from '../api/dates'
 
 export default function MatchDetail() {
   const { id } = useParams()
@@ -22,7 +23,7 @@ export default function MatchDetail() {
 
       <div className="bg-white rounded-xl shadow p-6 text-center">
         <p className="text-sm text-gray-400 mb-4">
-          {new Date(match.match_date).toLocaleString()} · {match.venue?.name}, {match.venue?.city}
+          {parseDate(match.match_date).toLocaleString()} · {match.venue?.name}, {match.venue?.city}
         </p>
         <div className="flex items-center justify-center gap-8">
           <div className="text-right">

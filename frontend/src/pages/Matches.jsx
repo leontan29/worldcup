@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { parseDate } from '../api/dates'
 
 const STAGES = ['group', 'round_of_16', 'quarterfinal', 'semifinal', 'third_place', 'final']
 
@@ -100,7 +101,7 @@ export default function Matches() {
           {matches.map(m => (
             <div key={m.id} className="bg-white rounded-lg shadow p-4">
               <div className="text-xs text-gray-400 mb-1">
-                {new Date(m.match_date).toLocaleString()} · {m.venue?.name} · <span className="capitalize">{m.stage?.replace(/_/g, ' ')}</span>
+                {parseDate(m.match_date).toLocaleString()} · {m.venue?.name} · <span className="capitalize">{m.stage?.replace(/_/g, ' ')}</span>
               </div>
               <div className="flex items-center gap-4">
                 <span className="flex-1 text-right font-medium">{m.home_team?.name}</span>

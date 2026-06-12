@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { parseDate } from '../api/dates'
 
 function MatchCard({ match }) {
   return (
     <Link to={`/matches/${match.id}`} className="block bg-white rounded-lg shadow p-4 hover:shadow-md transition">
       <div className="text-xs text-gray-500 mb-2">
-        {new Date(match.match_date).toLocaleString()} · {match.venue?.name}
+        {parseDate(match.match_date).toLocaleString()} · {match.venue?.name}
       </div>
       <div className="flex items-center justify-between gap-4">
         <div className="flex-1 text-right font-medium">{match.home_team?.name}</div>

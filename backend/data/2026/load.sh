@@ -55,4 +55,11 @@ IGNORE 1 ROWS
 (id, match_date, stage, group_name, home_team_id, away_team_id, venue_id, status, home_score, away_score);
 SQL
 
+echo "[load] Creating admin user..."
+$MYSQL <<'SQL'
+INSERT INTO users (username, email, password_hash, is_admin)
+VALUES ('admin', 'leontann29@gmail.com', '$2b$12$hMHSUt/L7o8.4NF25PtQo.6am3wMjisGFQem/20VMQS7AabTi2wfe', 1)
+ON DUPLICATE KEY UPDATE email = 'leontann29@gmail.com', password_hash = '$2b$12$hMHSUt/L7o8.4NF25PtQo.6am3wMjisGFQem/20VMQS7AabTi2wfe', is_admin = 1;
+SQL
+
 echo "[load] Done. $(mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD $DB_NAME -se 'SELECT COUNT(*) FROM matches') matches loaded."

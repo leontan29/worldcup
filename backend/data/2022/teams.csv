@@ -1,0 +1,33 @@
+id,name,country_code,group_name,fifa_ranking,coach
+1,Qatar,QAT,A,50,Felix Sanchez
+2,Ecuador,ECU,A,44,Gustavo Alfaro
+3,Senegal,SEN,A,18,Aliou Cisse
+4,Netherlands,NED,A,8,Louis van Gaal
+5,England,ENG,B,5,Gareth Southgate
+6,Iran,IRN,B,20,Carlos Queiros
+7,USA,USA,B,16,Gregg Berhalter
+8,Wales,WAL,B,19,Rob Page
+9,Argentina,ARG,C,3,Lionel Scaloni
+10,Saudi Arabia,KSA,C,51,Herve Renard
+11,Mexico,MEX,C,13,Gerardo Martino
+12,Poland,POL,C,26,Czeslaw Michniewicz
+13,France,FRA,D,4,Didier Deschamps
+14,Australia,AUS,D,38,Graham Arnold
+15,Denmark,DEN,D,10,Kasper Hjulmand
+16,Tunisia,TUN,D,30,Jalel Kadri
+17,Spain,ESP,E,7,Luis Enrique
+18,Costa Rica,CRC,E,31,Luis Fernando Suarez
+19,Germany,GER,E,11,Hansi Flick
+20,Japan,JPN,E,24,Hajime Moriyasu
+21,Belgium,BEL,F,2,Roberto Martinez
+22,Canada,CAN,F,41,John Herdman
+23,Morocco,MAR,F,22,Walid Regragui
+24,Croatia,CRO,F,12,Zlatko Dalic
+25,Brazil,BRA,G,1,Tite
+26,Serbia,SRB,G,21,Dragan Stojkovic
+27,Switzerland,SUI,G,15,Murat Yakin
+28,Cameroon,CMR,G,43,Rigobert Song
+29,Portugal,POR,H,9,Fernando Santos
+30,Ghana,GHA,H,61,Otto Addo
+31,Uruguay,URU,H,14,Diego Alonso
+32,South Korea,KOR,H,28,Paulo Bento

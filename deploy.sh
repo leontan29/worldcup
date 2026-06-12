@@ -236,8 +236,9 @@ fi
 info "Applying schema..."
 mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" < "$BACKEND/schema.sql"
 
-info "Seeding 2026 World Cup data..."
-bash "$BACKEND/data/2026/load.sh"
+YEAR="${WORLDCUP_YEAR:-2026}"
+info "Seeding ${YEAR} World Cup data..."
+bash "$BACKEND/data/${YEAR}/load.sh"
 
 # -- Python ----------------------------------------------------------------
 info "Installing Python dependencies..."
